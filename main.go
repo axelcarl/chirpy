@@ -28,6 +28,9 @@ func main() {
 		Handler: corsMux,
 	}
 
+	mux.Handle("/", http.FileServer(http.Dir(".")))
+
 	log.Printf("Starting server on port: %s\n", port)
+
 	log.Fatal(srv.ListenAndServe())
 }
