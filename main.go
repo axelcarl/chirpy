@@ -4,6 +4,8 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type apiConfig struct {
@@ -25,7 +27,7 @@ func middlewareCors(next http.Handler) http.Handler {
 
 func (cfg *apiConfig) middlewareMetrics(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cfg.fileserverHits++;
+		cfg.fileserverHits++
 		next.ServeHTTP(w, r)
 	})
 }
@@ -35,34 +37,36 @@ func main() {
 
 	cfg := apiConfig{}
 
-	mux := http.NewServeMux()
-	corsMux := middlewareCors(mux)
+	r := chi.NewRouter()
+
+	corsMux := middlewareCors(r)
 
 	srv := &http.Server{
 		Addr:    ":" + port,
 		Handler: corsMux,
 	}
 
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+	r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(200)
 		w.Write([]byte("OK"))
 	})
 
-	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+	r.Get("/metrics", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(200)
 
 		w.Write([]byte("Hits: " + strconv.Itoa(cfg.fileserverHits)))
 	})
 
-	mux.HandleFunc("/reset", func(w http.ResponseWriter, r *http.Request) {
+	r.Get("/reset", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(200)
 		cfg.fileserverHits = 0
 	})
 
-	mux.Handle("/app/", cfg.middlewareMetrics(http.StripPrefix("/app", http.FileServer(http.Dir(".")))))
+	r.Handle("/app", cfg.middlewareMetrics(http.StripPrefix("/app", http.FileServer(http.Dir(".")))))
+	r.Handle("/app/*", cfg.middlewareMetrics(http.StripPrefix("/app", http.FileServer(http.Dir(".")))))
 
 	log.Printf("Starting server on port: %s\n", port)
 
