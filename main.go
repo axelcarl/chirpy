@@ -23,9 +23,12 @@ func main() {
 	r.Handle("/app", fsHandler)
 	r.Handle("/app/*", fsHandler)
 
-	r.Get("/healthz", handlerHealth)
-	r.Get("/metrics", cfg.handlerMetrics)
-	r.Get("/reset", cfg.handlerReset)
+	r.Route("/api", func(r chi.Router) {
+		r.Get("/healthz", handlerHealth)
+		r.Get("/metrics", cfg.handlerMetrics)
+		r.Get("/reset", cfg.handlerReset)		
+	})
+
 
 	srv := &http.Server{
 		Addr:    ":" + port,
