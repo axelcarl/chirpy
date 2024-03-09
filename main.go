@@ -25,10 +25,12 @@ func main() {
 
 	r.Route("/api", func(r chi.Router) {
 		r.Get("/healthz", handlerHealth)
-		r.Get("/metrics", cfg.handlerMetrics)
-		r.Get("/reset", cfg.handlerReset)		
+		r.Get("/reset", cfg.handlerReset)
 	})
 
+	r.Route("/admin", func(r chi.Router) {
+		r.Get("/metrics", cfg.handlerMetrics)
+	})
 
 	srv := &http.Server{
 		Addr:    ":" + port,
